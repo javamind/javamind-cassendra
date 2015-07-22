@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class CassendraController {
 
     private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CassendraClient.class);
-
+    private static final String CASSENDRA_IP = "172.18.1.241";
     /**
      *
      * @param timeserie
@@ -41,8 +41,7 @@ public class CassendraController {
         CassendraClient client = new CassendraClient();
 
         try {
-            client.connect("127.0.0.1");
-            Session session = client.getSession();
+            Session session = client.connect(CASSENDRA_IP).getSession();
             LOG.info("Load all te data for measurement = [{}]", timeserie);
             ResultSet results = session.execute(String.format("SELECT * FROM ep_measurement.measurement_%s where measurement_id = '%s';", timeserie,timeserie));
 
@@ -100,8 +99,7 @@ public class CassendraController {
     public void loadData(@PathVariable(value = "id") String timeserie) {
         CassendraClient client = new CassendraClient();
         try {
-            client.connect("127.0.0.1");
-            Session session = client.getSession();
+            Session session = client.connect(CASSENDRA_IP).getSession();
             PreparedStatement statement = session.prepare("INSERT INTO ep_measurement.measurement(measurement_id ,event_time,value ) VALUES (?,?,?);");
 
             BoundStatement boundStatement = new BoundStatement(statement);
@@ -127,8 +125,7 @@ public class CassendraController {
         LocalDateTime dateTime = LocalDateTime.of(year, month, date, 0, 0, 0);
         CassendraClient client = new CassendraClient();
         try {
-            client.connect("127.0.0.1");
-            Session session = client.getSession();
+            Session session = client.connect(CASSENDRA_IP).getSession();
             session.execute(String.format("CREATE TABLE IF NOT EXISTS ep_measurement.measurement_%s(measurement_id text,event_time timestamp,value bigint,PRIMARY KEY (measurement_id, event_time));", timeserie));
             PreparedStatement statement = session.prepare(String.format("INSERT INTO ep_measurement.measurement_%s(measurement_id ,event_time,value ) VALUES (?,?,?);", timeserie));
 

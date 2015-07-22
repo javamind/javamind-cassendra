@@ -12,8 +12,8 @@ public class CassendraClient {
     private Session session;
     private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CassendraClient.class);
 
-    public void connect(String node) {
-        cluster = Cluster.builder().addContactPoint(node).build();
+    public CassendraClient connect(String node) {
+        cluster = Cluster.builder().withPort(9042).addContactPoint(node).build();
 
         Metadata metadata = cluster.getMetadata();
         LOG.debug("Connected to cluster: {}", metadata.getClusterName());
@@ -22,6 +22,7 @@ public class CassendraClient {
         }
 
         session = cluster.connect();
+        return this;
     }
 
     public void close() {
