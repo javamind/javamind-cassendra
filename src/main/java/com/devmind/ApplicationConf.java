@@ -8,17 +8,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ApplicationConf {
 
-    public static final String CASSENDRA_NODE = "172.18.1.241";
+    public static final String CASSANDRA_NODE = "172.18.1.241";
     @Bean
     public CassandraClient cassendraClient(){
-        return new CassandraClient(CASSENDRA_NODE);
+        return new CassandraClient(CASSANDRA_NODE);
     }
 
     @Bean
     public SparkConf sparkConf(){
         return new SparkConf()
                 .setAppName("Poc Cassendra Spark")
-                .setMaster(CASSENDRA_NODE)
-                .set("spark.cassendra.connection.host", CASSENDRA_NODE);
+                .setMaster("local[4]")
+                .set("spark.cassandra.connection.host", CASSANDRA_NODE);
     }
 }
