@@ -1,4 +1,4 @@
-package com.devmind.cassendra.poc;
+package com.devmind.measure;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

@@ -1,4 +1,4 @@
-package com.devmind.cassendra.poc;
+package com.devmind.cassandra.poc;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
@@ -6,13 +6,21 @@ import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import org.slf4j.Logger;
 
-public class CassendraClient {
+public class CassandraClient {
 
+    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CassandraClient.class);
+
+    //TODO thread safe
     private Cluster cluster;
+    //TODO thread safe
     private Session session;
-    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CassendraClient.class);
+    private String node;
 
-    public CassendraClient connect(String node) {
+    public CassandraClient(String node) {
+        this.node = node;
+    }
+
+    public CassandraClient connect() {
         cluster = Cluster.builder().withPort(9042).addContactPoint(node).build();
 
         Metadata metadata = cluster.getMetadata();

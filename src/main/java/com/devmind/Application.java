@@ -1,4 +1,4 @@
-package com.devmind.cassendra.poc;
+package com.devmind;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

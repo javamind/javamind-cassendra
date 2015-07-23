@@ -1,14 +1,17 @@
-package com.devmind.cassendra.poc;
+package com.devmind.cassandra.poc;
 
 import com.datastax.driver.core.*;
+import com.devmind.measure.Measure;
+import com.devmind.measure.MeasureDTO;
+import com.devmind.measure.MeasureService;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -22,12 +25,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@EnableWebMvc
 @RequestMapping(value = "/cassendra")
-public class CassendraController {
+public class CassandraController {
 
-    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CassendraClient.class);
-    private static final String CASSENDRA_IP = "172.18.1.241";
+    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CassandraClient.class);
+
+    @Autowired
+    private CassandraClient client;
+
+    @Autowired
+    private MeasureService measureService;
+
     /**
      *
      * @param timeserie
@@ -38,10 +46,9 @@ public class CassendraController {
     public ResponseEntity<List<MeasureDTO>> scan(@PathVariable(value = "id") String timeserie,
                                                @RequestParam(value = "group", required = false) CustomChronoUnit group) {
         Instant start = Instant.now();
-        CassendraClient client = new CassendraClient();
 
         try {
-            Session session = client.connect(CASSENDRA_IP).getSession();
+            Session session = client.connect().getSession();
             LOG.info("Load all te data for measurement = [{}]", timeserie);
             ResultSet results = session.execute(String.format("SELECT * FROM ep_measurement.measurement_%s where measurement_id = '%s';", timeserie,timeserie));
 
@@ -56,22 +63,7 @@ public class CassendraController {
                                     .setValue(row.getLong("value"))
                                     .setEventTime(LocalDateTime.ofInstant(row.getDate("event_time").toInstant(), ZoneId.systemDefault())));
                 }
-
-                LOG.info("data are grouped by {}", group);
-                //We compute average by grouping on seconds, minutes....
-                Map<LocalDateTime, Double> averages =
-                        values.stream().collect(Collectors.groupingBy(
-                                e -> e.getEventTime().truncatedTo(group),
-                                Collectors.averagingDouble(e -> e.getValue())));
-
-                Instant step = Instant.now();
-                LOG.info("data read first step in {} ms", Duration.between(start, step));
-                dtos = averages
-                                .entrySet()
-                                .stream()
-                                .map(e -> new MeasureDTO().setValue(e.getValue().longValue()).setEventTime(e.getKey()))
-                                .collect(Collectors.toList());
-                LOG.info("data read second step in {} ms", Duration.between(step, Instant.now()).toMillis());
+                dtos = measureService.computeAverageOnTimeRange(values, group, start);
             }
             else{
                 dtos = new ArrayList<>();
@@ -95,11 +87,10 @@ public class CassendraController {
     }
 
 
-    @RequestMapping(value = "/load/{id}")
-    public void loadData(@PathVariable(value = "id") String timeserie) {
-        CassendraClient client = new CassendraClient();
-        try {
-            Session session = client.connect(CASSENDRA_IP).getSession();
+    @RequestMapping(value = "/insert1/{id}")
+    public void insertOneData(@PathVariable(value = "id") String timeserie) {
+         try {
+            Session session = client.connect().getSession();
             PreparedStatement statement = session.prepare("INSERT INTO ep_measurement.measurement(measurement_id ,event_time,value ) VALUES (?,?,?);");
 
             BoundStatement boundStatement = new BoundStatement(statement);
@@ -115,7 +106,7 @@ public class CassendraController {
     //on cherche à générer un jeu de données sur un mois ou on écrit une valeur par secondes
     // create a calendar
     @RequestMapping(value = "/insert/{id}")
-    public void loadAllData(
+    public void insert(
             @PathVariable(value = "id") String timeserie,
             @RequestParam(value = "year", defaultValue = "2015") int year,
             @RequestParam(value = "month", defaultValue = "7") int month,
@@ -123,9 +114,8 @@ public class CassendraController {
 
         Instant start = Instant.now();
         LocalDateTime dateTime = LocalDateTime.of(year, month, date, 0, 0, 0);
-        CassendraClient client = new CassendraClient();
         try {
-            Session session = client.connect(CASSENDRA_IP).getSession();
+            Session session = client.connect().getSession();
             session.execute(String.format("CREATE TABLE IF NOT EXISTS ep_measurement.measurement_%s(measurement_id text,event_time timestamp,value bigint,PRIMARY KEY (measurement_id, event_time));", timeserie));
             PreparedStatement statement = session.prepare(String.format("INSERT INTO ep_measurement.measurement_%s(measurement_id ,event_time,value ) VALUES (?,?,?);", timeserie));
 
@@ -144,11 +134,16 @@ public class CassendraController {
 
     }
 
-    @RequestMapping(value = "/insert50/{id}")
-    public void createData(@PathVariable(value = "id") String timeserie){
-        for(int i=0 ; i<50 ; i++){
-            loadAllData(timeserie+i, 2014, 7,20);
+    @RequestMapping(value = "/insertn/{id}")
+    public void createData(@PathVariable(value = "id") String timeserie) throws InterruptedException {
+        int cpt=500;
+        for(int i=0 ; i<500 ; i++){
+            LOG.info("{} remainings series ", cpt--);
+            insert(timeserie+i, 2014, 7,20);
+            if(i%5==0){
+                Thread.sleep(14400);
+            }
         }
-
+        LOG.info("Batch is done");
     }
 }

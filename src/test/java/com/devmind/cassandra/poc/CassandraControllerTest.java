@@ -1,22 +1,15 @@
-package com.devmind.cassendra.poc;
+package com.devmind.cassandra.poc;
 
+import com.devmind.measure.Measure;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.ValueRange;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
 
-
-public class CassendraControllerTest {
+public class CassandraControllerTest {
     List<Measure> measures = new ArrayList<>();
 
     {

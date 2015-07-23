@@ -1,4 +1,4 @@
-package com.devmind.cassendra.poc;
+package com.devmind.cassandra.poc;
 
 import java.time.Duration;
 import java.time.temporal.Temporal;
